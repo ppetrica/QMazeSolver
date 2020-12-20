@@ -1,0 +1,10 @@
+D:\Workspace\IA\QMazeSolver\QMazeSolver\bin\Debug\QMazeSolver.exe.config
+D:\Workspace\IA\QMazeSolver\QMazeSolver\bin\Debug\QMazeSolver.exe
+D:\Workspace\IA\QMazeSolver\QMazeSolver\bin\Debug\QMazeSolver.pdb
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.csprojAssemblyReference.cache
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.Form1.resources
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.Properties.Resources.resources
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.csproj.GenerateResource.cache
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.csproj.CoreCompileInputs.cache
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.exe
+D:\Workspace\IA\QMazeSolver\QMazeSolver\obj\Debug\QMazeSolver.pdb

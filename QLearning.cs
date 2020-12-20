@@ -12,7 +12,12 @@ namespace QMazeSolver
         {
             double[][] Q = new double[ns][];
             for (int i = 0; i < ns; ++i)
+            {
                 Q[i] = new double[ns];
+                for (int j = 0; j < ns; ++j) {
+                    //Q[i][j] = double.MinValue;
+                }
+            }
             return Q;
         }
 
@@ -32,7 +37,7 @@ namespace QMazeSolver
             return possNextStates[idx];
         }
 
-        public static void Train(double[][] R, double[][] Q, int goal, double gamma, double lrnRate, int maxEpochs)
+        public static void Train(double[][] R, double[][] Q, int goal, double gamma, double lrnRate, int maxEpochs, int maxIterations)
         {
             List<int> validStates = new List<int>();
             for (int i = 0; i < R.Length; ++i) {
@@ -52,7 +57,7 @@ namespace QMazeSolver
             {
                 int idx = rnd.Next(0, validStates.Count);
                 int currState = validStates[idx];
-                while (true)
+                for (int it = 0; it < maxIterations && currState != goal; ++it)
                 {
                     int nextState = GetRandNextState(currState, R);
                     List<int> possNextNextStates = GetPossNextStates(nextState, R);
@@ -67,19 +72,28 @@ namespace QMazeSolver
         ((1 - lrnRate) * Q[currState][nextState]) +
         (lrnRate * (R[currState][nextState] + (gamma * maxQ)));
                     currState = nextState;
-                    if (currState == goal) break;
                 } // while
             } // for
         } // Train
 
-        public static List<int> Walk(int start, int goal, double[][] Q)
+        public static List<int> Walk(int start, int goal, double[][] Q, double[][] R)
         {
             List<int> steps = new List<int>();
             int curr = start;
-            int next;
             while (curr != goal)
             {
-                next = ArgMax(Q[curr]);
+                int next = -1;
+                List<int> maxs = ArgMax(Q[curr], R[curr]);
+                for (int i = 0; i < maxs.Count; ++i) {
+                    if (!steps.Contains(maxs[i])) {
+                        next = maxs[i];
+                        break;
+                    }
+                }
+
+                if (next == -1)
+                    throw new Exception("Nu");
+
                 steps.Add(curr);
                 curr = next;
             }
@@ -87,17 +101,25 @@ namespace QMazeSolver
             return steps;
         }
 
-        static int ArgMax(double[] vector)
+        static List<int> ArgMax(double[] vector, double[] R)
         {
-            double maxVal = vector[0]; int idx = 0;
+            double maxVal = double.MinValue;
+            List<int> maxs = new List<int>();
             for (int i = 0; i < vector.Length; ++i)
             {
-                if (vector[i] > maxVal)
+                if (R[i] != double.MinValue)
                 {
-                    maxVal = vector[i]; idx = i;
+                    if (vector[i] > maxVal)
+                    {
+                        maxs.Clear();
+                        maxVal = vector[i];
+                        maxs.Add(i);
+                    } else if (vector[i] == maxVal) {
+                        maxs.Add(i);
+                    }
                 }
             }
-            return idx;
+            return maxs;
         }
     }
 }

@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace QMazeSolver {
-    public enum CellState {
+namespace QMazeSolver
+{
+    public enum CellState
+    {
         BACKGROUND,
         OBSTACLE,
         START,
@@ -13,11 +16,11 @@ namespace QMazeSolver {
 
     public partial class Form1 : Form
     {
-        const int nRows = 16;
-        const int nColumns = 16;
-        const int cellSize = 30;
+        const int nRows = 20;
+        const int nColumns = 20;
+        const int cellSize = 40;
 
-        CellState[,]cellStates;
+        CellState[,] cellStates;
 
         bool startSet = false;
         bool finishSet = false;
@@ -25,19 +28,63 @@ namespace QMazeSolver {
 
         TableLayoutPanel grid;
 
-        private void SolveMaze() {
+        double[][] Q = QLearning.CreateQuality(nRows * nColumns);
+        double[][] R = new double[nRows * nColumns][];
+
+        void WalkSolution()
+        {
+            int nStartCell = 0;
+            int nFinishCell = 0;
+
+            for (int i = 0; i < nRows; ++i)
+            {
+                for (int j = 0; j < nColumns; ++j)
+                {
+                    if (cellStates[i, j] == CellState.START)
+                    {
+                        nStartCell = i * nColumns + j;
+                    }
+                    else if (cellStates[i, j] == CellState.FINISH)
+                    {
+                        nFinishCell = i * nColumns + j;
+                    }
+                }
+            }
+
+            try
+            {
+                List<int> steps = QLearning.Walk(nStartCell, nFinishCell, Q, R);
+                for (int s = 1; s < steps.Count; ++s)
+                {
+                    int k = steps[s];
+                    int i = k / nColumns;
+                    int j = k % nColumns;
+
+                    Button button = (Button)grid.GetControlFromPosition(j, i);
+
+                    if (button.BackColor != Color.Gold)
+                        button.BackColor = Color.Yellow;
+                }
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show("Nu se poate ajunge la acea destinatie");
+            }
+        }
+
+        private void SolveMaze()
+        {
             int nCells = nRows * nColumns;
-            double[][] Q = QLearning.CreateQuality(nCells);
-            double[][] R = new double[nCells][];
-            for (int i = 0; i < nCells; ++i) {
+            for (int i = 0; i < nCells; ++i)
+            {
                 R[i] = new double[nCells];
-                for (int j = 0; j < nCells; ++j) {
+                for (int j = 0; j < nCells; ++j)
+                {
                     R[i][j] = double.MinValue;
                 }
             }
 
             int nFinishCell = 0;
-            int nStartCell = 0;
             for (int i = 0; i < nRows; ++i)
             {
                 for (int j = 0; j < nColumns; ++j)
@@ -47,11 +94,10 @@ namespace QMazeSolver {
                     if (cellStates[i, j] == CellState.FINISH)
                         nFinishCell = nCell;
 
-                    if (cellStates[i, j] == CellState.START)
-                        nStartCell = nCell;
-
-                    if (cellStates[i, j] == CellState.BACKGROUND 
-                        || cellStates[i, j] == CellState.START) {
+                    if (cellStates[i, j] == CellState.BACKGROUND
+                        || cellStates[i, j] == CellState.START
+                        || cellStates[i, j] == CellState.BONUS)
+                    {
                         List<Point> v = new List<Point>();
                         if (j < nColumns - 1)
                             v.Add(new Point(j + 1, i));
@@ -62,22 +108,24 @@ namespace QMazeSolver {
                         if (i > 0)
                             v.Add(new Point(j, i - 1));
 
-                        for (int k = 0; k < v.Count; ++k) {
+                        for (int k = 0; k < v.Count; ++k)
+                        {
                             int vCell = v[k].Y * nColumns + v[k].X;
 
-                            switch (cellStates[v[k].Y, v[k].X]) {
+                            switch (cellStates[v[k].Y, v[k].X])
+                            {
                                 case CellState.BACKGROUND:
                                 case CellState.START:
-                                    R[nCell][vCell] = 0.1;
+                                    R[nCell][vCell] = -0.01;
                                     break;
                                 case CellState.OBSTACLE:
                                     R[nCell][vCell] = double.MinValue;
                                     break;
                                 case CellState.FINISH:
-                                    R[nCell][vCell] = 10.0;
+                                    R[nCell][vCell] = 1000.0;
                                     break;
                                 case CellState.BONUS:
-                                    R[nCell][vCell] = 1.0;
+                                    R[nCell][vCell] = 10.0;
                                     break;
                             }
                         }
@@ -86,27 +134,20 @@ namespace QMazeSolver {
             }
 
             R[nFinishCell][nFinishCell] = 0.0;
-            QLearning.Train(R, Q, nFinishCell, 0.5, 0.5, 1000);
+            QLearning.Train(R, Q, nFinishCell, 0.5, 0.5, 1000, 50000);
 
-            List<int> steps = QLearning.Walk(nStartCell, nFinishCell, Q);
-
-            for (int s = 1; s < steps.Count; ++s) {
-                int k = steps[s];
-                int i = k / nColumns;
-                int j = k % nColumns;
-
-                Button button = (Button)grid.GetControlFromPosition(j, i);
-                button.BackColor = Color.Yellow;
-            }
+            WalkSolution();
         }
 
-        private void ResetMaze() {
+        private void ResetMaze()
+        {
             for (int i = 0; i < nRows; ++i)
             {
                 for (int j = 0; j < nColumns; ++j)
                 {
                     Button button = (Button)grid.GetControlFromPosition(j, i);
                     button.BackColor = Color.White;
+                    cellStates[i, j] = CellState.BACKGROUND;
                 }
             }
 
@@ -115,8 +156,10 @@ namespace QMazeSolver {
             startSet = false;
         }
 
-        void KeyCallback(object sender, KeyEventArgs keyEvent) {
-            if (keyEvent.KeyCode == Keys.Space) {
+        void KeyCallback(object sender, KeyEventArgs keyEvent)
+        {
+            if (keyEvent.KeyCode == Keys.Space)
+            {
                 if (startSet && finishSet)
                 {
                     if (!mazeSolved)
@@ -129,27 +172,34 @@ namespace QMazeSolver {
                         ResetMaze();
                         mazeSolved = false;
                     }
-                } else {
+                }
+                else
+                {
                     MessageBox.Show("Start cell and end cell not set");
                 }
             }
         }
 
-        void ButtonClick(object sender, MouseEventArgs mouseEvent) {
+        void ButtonClick(object sender, MouseEventArgs mouseEvent)
+        {
             Button button = (Button)sender;
-
-            if (mazeSolved)
-                return;
 
             int index = (int)button.Tag;
             int row = index / nColumns;
             int column = index % nColumns;
 
-            if (mouseEvent.Button == MouseButtons.Left) {
-                if (cellStates[row, column] == CellState.BACKGROUND) {
+            if (mouseEvent.Button == MouseButtons.Left)
+            {
+                if (mazeSolved)
+                    return;
+
+                if (cellStates[row, column] == CellState.BACKGROUND)
+                {
                     button.BackColor = Color.Black;
                     cellStates[row, column] = CellState.OBSTACLE;
-                } else if (cellStates[row, column] != CellState.BACKGROUND) {
+                }
+                else if (cellStates[row, column] != CellState.BACKGROUND)
+                {
                     if (cellStates[row, column] == CellState.START)
                         startSet = false;
 
@@ -159,17 +209,66 @@ namespace QMazeSolver {
                     button.BackColor = Color.White;
                     cellStates[row, column] = CellState.BACKGROUND;
                 }
-            } else if (mouseEvent.Button == MouseButtons.Right) {
-                if (!startSet) {
+            }
+            else if (mouseEvent.Button == MouseButtons.Right)
+            {
+                if (cellStates[row, column] == CellState.OBSTACLE ||
+                cellStates[row, column] == CellState.START ||
+                cellStates[row, column] == CellState.FINISH)
+                    return;
+
+                if (!startSet)
+                {
                     cellStates[row, column] = CellState.START;
                     button.BackColor = Color.Red;
                     startSet = true;
-                } else {
-                    if (cellStates[row, column] != CellState.START) {
-                        cellStates[row, column] = CellState.FINISH;
-                        button.BackColor = Color.Green;
-                        finishSet = true;
+                }
+                else
+                {
+                    if (finishSet)
+                    {
+                        for (int i = 0; i < nRows; ++i)
+                        {
+                            for (int j = 0; j < nColumns; ++j)
+                            {
+                                Button btn = (Button)grid.GetControlFromPosition(j, i);
+
+                                if (cellStates[i, j] == CellState.START)
+                                {
+                                    cellStates[i, j] = CellState.BACKGROUND;
+                                    btn.BackColor = Color.White;
+                                }
+
+                                if (btn.BackColor == Color.Yellow)
+                                    btn.BackColor = Color.White;
+                            }
+                        }
+
+                        cellStates[row, column] = CellState.START;
+                        button.BackColor = Color.Red;
+
+                        if (mazeSolved)
+                            WalkSolution();
                     }
+                    else
+                    {
+                        if (cellStates[row, column] != CellState.START)
+                        {
+                            cellStates[row, column] = CellState.FINISH;
+                            button.BackColor = Color.Green;
+                            finishSet = true;
+                        }
+                    }
+                }
+            } else if (mouseEvent.Button == MouseButtons.Middle) {
+                if (mazeSolved)
+                    return;
+
+                if (cellStates[row, column] == CellState.BACKGROUND
+                    || cellStates[row, column] == CellState.OBSTACLE)
+                {
+                    button.BackColor = Color.Gold;
+                    cellStates[row, column] = CellState.BONUS;
                 }
             }
         }
@@ -193,8 +292,10 @@ namespace QMazeSolver {
 
             Controls.Add(grid);
 
-            for (int i = 0; i < nRows; ++i) {
-                for (int j = 0; j < nColumns; ++j) {
+            for (int i = 0; i < nRows; ++i)
+            {
+                for (int j = 0; j < nColumns; ++j)
+                {
                     cellStates[i, j] = CellState.BACKGROUND;
 
                     Button button = new Button();
