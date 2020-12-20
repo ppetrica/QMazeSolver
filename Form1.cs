@@ -61,9 +61,7 @@ namespace QMazeSolver
                     int j = k % nColumns;
 
                     Button button = (Button)grid.GetControlFromPosition(j, i);
-
-                    if (button.BackColor != Color.Gold)
-                        button.BackColor = Color.Yellow;
+                    button.BackColor = Color.Yellow;
                 }
             }
             catch (Exception e)
@@ -95,8 +93,7 @@ namespace QMazeSolver
                         nFinishCell = nCell;
 
                     if (cellStates[i, j] == CellState.BACKGROUND
-                        || cellStates[i, j] == CellState.START
-                        || cellStates[i, j] == CellState.BONUS)
+                        || cellStates[i, j] == CellState.START)
                     {
                         List<Point> v = new List<Point>();
                         if (j < nColumns - 1)
@@ -125,7 +122,7 @@ namespace QMazeSolver
                                     R[nCell][vCell] = 1000.0;
                                     break;
                                 case CellState.BONUS:
-                                    R[nCell][vCell] = 10.0;
+                                    R[nCell][vCell] = 1.0;
                                     break;
                             }
                         }
@@ -134,7 +131,7 @@ namespace QMazeSolver
             }
 
             R[nFinishCell][nFinishCell] = 0.0;
-            QLearning.Train(R, Q, nFinishCell, 0.5, 0.5, 1000, 50000);
+            QLearning.Train(R, Q, nFinishCell, 0.5, 0.5, 10000, 50000);
 
             WalkSolution();
         }
@@ -260,16 +257,6 @@ namespace QMazeSolver
                         }
                     }
                 }
-            } else if (mouseEvent.Button == MouseButtons.Middle) {
-                if (mazeSolved)
-                    return;
-
-                if (cellStates[row, column] == CellState.BACKGROUND
-                    || cellStates[row, column] == CellState.OBSTACLE)
-                {
-                    button.BackColor = Color.Gold;
-                    cellStates[row, column] = CellState.BONUS;
-                }
             }
         }
 
@@ -277,6 +264,8 @@ namespace QMazeSolver
         {
             InitializeComponent();
             ClientSize = new Size(nRows * cellSize, nColumns * cellSize);
+
+            FormBorderStyle = FormBorderStyle.FixedSingle;
 
             KeyUp += KeyCallback;
 
@@ -310,6 +299,7 @@ namespace QMazeSolver
                     button.FlatStyle = FlatStyle.Flat;
                     button.FlatAppearance.BorderSize = 1;
                     button.MouseDown += ButtonClick;
+                    button.MouseHover += ButtonHover;
                     button.Tag = i * nColumns + j;
 
                     TableLayoutPanelCellPosition cellPos = new TableLayoutPanelCellPosition(j, i);
