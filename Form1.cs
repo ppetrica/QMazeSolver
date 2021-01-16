@@ -28,7 +28,7 @@ namespace QMazeSolver
 
         TableLayoutPanel grid;
 
-        double[][] Q = QLearning.CreateQuality(nRows * nColumns);
+        double[][] Q = new double[nRows * nColumns][];
         double[][] R = new double[nRows * nColumns][];
 
         void WalkSolution()
@@ -72,66 +72,66 @@ namespace QMazeSolver
 
         private void SolveMaze()
         {
-            int nCells = nRows * nColumns;
-            for (int i = 0; i < nCells; ++i)
+        int nCells = nRows * nColumns;
+        for (int i = 0; i < nCells; ++i)
+        {
+            R[i] = new double[nCells];
+            for (int j = 0; j < nCells; ++j)
             {
-                R[i] = new double[nCells];
-                for (int j = 0; j < nCells; ++j)
-                {
-                    R[i][j] = double.MinValue;
-                }
+                R[i][j] = double.MinValue;
             }
+        }
 
-            int nFinishCell = 0;
-            for (int i = 0; i < nRows; ++i)
+        int nFinishCell = 0;
+        for (int i = 0; i < nRows; ++i)
+        {
+            for (int j = 0; j < nColumns; ++j)
             {
-                for (int j = 0; j < nColumns; ++j)
+                int nCell = i * nColumns + j;
+
+                if (cellStates[i, j] == CellState.FINISH)
+                    nFinishCell = nCell;
+
+                if (cellStates[i, j] == CellState.BACKGROUND
+                    || cellStates[i, j] == CellState.START)
                 {
-                    int nCell = i * nColumns + j;
+                    List<Point> v = new List<Point>();
+                    if (j < nColumns - 1)
+                        v.Add(new Point(j + 1, i));
+                    if (j > 0)
+                        v.Add(new Point(j - 1, i));
+                    if (i < nRows - 1)
+                        v.Add(new Point(j, i + 1));
+                    if (i > 0)
+                        v.Add(new Point(j, i - 1));
 
-                    if (cellStates[i, j] == CellState.FINISH)
-                        nFinishCell = nCell;
-
-                    if (cellStates[i, j] == CellState.BACKGROUND
-                        || cellStates[i, j] == CellState.START)
+                    for (int k = 0; k < v.Count; ++k)
                     {
-                        List<Point> v = new List<Point>();
-                        if (j < nColumns - 1)
-                            v.Add(new Point(j + 1, i));
-                        if (j > 0)
-                            v.Add(new Point(j - 1, i));
-                        if (i < nRows - 1)
-                            v.Add(new Point(j, i + 1));
-                        if (i > 0)
-                            v.Add(new Point(j, i - 1));
+                        int vCell = v[k].Y * nColumns + v[k].X;
 
-                        for (int k = 0; k < v.Count; ++k)
+                        switch (cellStates[v[k].Y, v[k].X])
                         {
-                            int vCell = v[k].Y * nColumns + v[k].X;
-
-                            switch (cellStates[v[k].Y, v[k].X])
-                            {
-                                case CellState.BACKGROUND:
-                                case CellState.START:
-                                    R[nCell][vCell] = -0.01;
-                                    break;
-                                case CellState.OBSTACLE:
-                                    R[nCell][vCell] = double.MinValue;
-                                    break;
-                                case CellState.FINISH:
-                                    R[nCell][vCell] = 1000.0;
-                                    break;
-                                case CellState.BONUS:
-                                    R[nCell][vCell] = 1.0;
-                                    break;
-                            }
+                            case CellState.BACKGROUND:
+                            case CellState.START:
+                                R[nCell][vCell] = -0.01;
+                                break;
+                            case CellState.OBSTACLE:
+                                R[nCell][vCell] = double.MinValue;
+                                break;
+                            case CellState.FINISH:
+                                R[nCell][vCell] = 1000.0;
+                                break;
+                            case CellState.BONUS:
+                                R[nCell][vCell] = 1.0;
+                                break;
                         }
                     }
                 }
             }
+        }
 
-            R[nFinishCell][nFinishCell] = 0.0;
-            QLearning.Train(R, Q, nFinishCell, 0.5, 0.5, 10000, 50000);
+        R[nFinishCell][nFinishCell] = 0.0;
+            QLearning.Solve(R, Q, nFinishCell, 0.5, 0.5, 1000, 200000);
 
             WalkSolution();
         }
@@ -299,7 +299,6 @@ namespace QMazeSolver
                     button.FlatStyle = FlatStyle.Flat;
                     button.FlatAppearance.BorderSize = 1;
                     button.MouseDown += ButtonClick;
-                    button.MouseHover += ButtonHover;
                     button.Tag = i * nColumns + j;
 
                     TableLayoutPanelCellPosition cellPos = new TableLayoutPanelCellPosition(j, i);
@@ -307,6 +306,12 @@ namespace QMazeSolver
 
                     grid.Controls.Add(button);
                 }
+            }
+
+            int nCells = nRows * nColumns;
+            for (int i = 0; i < nCells; ++i)
+            {
+                Q[i] = new double[nCells];
             }
         }
     }
